@@ -2,7 +2,7 @@
 // 3/4/18
 // Program creates a heap from a file or user input, 
 // and removes it from largest to smallest outputting the result
-// Based on the algorithm of java program from: http://www.sanfoundry.com/java-program-implement-max-heap/
+// Based on the algorithm from the book: Data Structures and Analysis in Java By: Clifford A. Shaffer
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -17,10 +17,13 @@ void printFullTree(int* heap, int heapSize);
 int removeAndPrint(int* heap, int heapSize);
 void maximize(int* heap, int heapSize, int pos);
 int remove(int* heap, int& heapSize);
+bool isLeaf(int heapSize, int pos);
+int parent(int pos);
+int leftChild(int pos);
+int rightChild(int pos);
 
 int main () {
-	int heap[101];	//1 extra because we are starting at index 1 instead of 0
-	heap[0] = 1001;  //Just a number larger than maximum allowed
+	int heap[100];
 	int heapSize=0;
 	cout << "Enter option:" << endl;
 	cout << "1 to specify a file name" << endl;
@@ -68,11 +71,13 @@ void readFile(int* heap, int & heapSize) {
 
 // Insert a number into the heap at the  correct position
 void insert(int* heap, int & heapSize, int value) {
-	heap[++heapSize] = value;
-	int current = heapSize;
-	while(heap[current] > heap[current/2]) {
-		swap(heap, current, current/2);
-		current = current/2;
+	int current = heapSize++;
+	//Start at the end of the heap
+	heap[current] = value;
+	//Sift up until parent > current
+	while(current != 0 && heap[current] > heap[parent(current)]) {
+		swap(heap, current, parent(current));
+		current = parent(current);
 	}
 }
 
@@ -85,9 +90,12 @@ void swap(int* heap, int pos1, int pos2) {
 
 // Prints the description of the heap tree			
 void printFullTree(int* heap, int heapSize) {
-	for(int i = 1; i <= heapSize/2; i++) {
-		cout << "PARENT: " << heap[i] << " LEFT CHILD: " << heap[2*i]
-			<< " RIGHT CHILD: " << heap[2*i+1] << endl;
+	for(int i = 0; i < heapSize/2; i++) {
+		cout << "PARENT: " << heap[i] << " LEFT CHILD: " << heap[leftChild(i)];
+		if (rightChild(i) < heapSize) {
+			cout << " RIGHT CHILD: " << heap[rightChild(i)];
+		}
+		cout << endl;
 	}
 }
 
@@ -107,11 +115,15 @@ void readInput(int* heap, int & heapSize) {
 
 // Removes the largest value from the heap
 int remove(int* heap, int & heapSize) {
-	int popped = heap[1];
-	heap[1] = heap[heapSize--];
-	maximize(heap, heapSize, 1);
-	return popped;
+	//Swap max with last value
+	swap(heap, 0, --heapSize);
+	if(heapSize != 0) {
+		//Put new heap root value in correct place 
+		maximize(heap, heapSize, 0); 
+	}
+	return heap[heapSize];
 }
+
 
 //Removes and prints all values in descending order
 int removeAndPrint(int* heap, int heapSize) {
@@ -120,16 +132,39 @@ int removeAndPrint(int* heap, int heapSize) {
 	}
 }
 
+//Tells if a given position is a leaf 
+bool isLeaf(int heapSize, int pos) {
+	return pos >= heapSize/2 && pos < heapSize;
+}
+
+//Tells the parent of a given position
+int parent(int pos) {
+	return (pos-1)/2;
+}
+
+//Tells the left child of a given position
+int leftChild(int pos) {
+	return 2*pos + 1;
+}
+
+//Tells the right child of a given position
+int rightChild(int pos) {
+	return 2*pos + 2;
+}
+
 // Recursively puts the maximum number at the top of the heap
 void maximize(int* heap, int heapSize, int pos) {
-	if ((pos < heapSize/2 || pos > heapSize) && (heap[pos] < heap[2*pos] || heap[pos] < heap[2*pos+1])) {
-		if (heap[2*pos] > heap[2*pos +1]) {
-			swap(heap, pos, 2*pos);
-			maximize(heap, heapSize, 2*pos);
+	while (!isLeaf(heapSize, pos)){
+		int j= 2*pos + 1;
+		if(j < (heapSize-1) && heap[j] < heap[j+1]) {
+			//Index of child with greater value
+			j++;
 		}
-		else {
-			swap(heap, pos, 2*pos+1);
-			maximize(heap, heapSize, 2*pos+1);
+		if (heap[pos] >= heap[j]) {
+			return;
 		}
+		swap(heap, pos, j);
+		//Move down 
+		pos = j;
 	}
 }
